@@ -2,6 +2,7 @@ import St from 'gi://St';
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
+import GTop from 'gi://GTop';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
@@ -52,7 +53,16 @@ export default class MemoryAlertExtension extends Extension {
 
             killBtn.connect('clicked', () => {
                 if (item._pid) {
-                    GLib.spawn_command_line_async(`kill -15 ${item._pid}`);
+                    try {
+                        // Correção de segurança EGO: argv array para evitar injeção de comandos
+                        let proc = new Gio.Subprocess({
+                            argv: ['kill', '-15', item._pid.toString()]
+                        });
+                        proc.init(null);
+                        proc.wait_async(null, null);
+                    } catch (e) {
+                        console.error(`MemAlert Kill Error: ${e.message}`);
+                    }
                 }
             });
 
@@ -62,25 +72,65 @@ export default class MemoryAlertExtension extends Extension {
 
         this._indicator.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         this._indicator.menu.addAction('Abrir Monitor do Sistema', () => {
-            GLib.spawn_command_line_async('gnome-system-monitor');
+            try {
+                // Correção EGO: DesktopAppInfo para conformidade com Wayland e EGO guidelines
+                let appInfo = Gio.DesktopAppInfo.new('gnome-system-monitor.desktop');
+                if (appInfo) {
+                    appInfo.launch(null, null);
+                } else {
+                    let proc = new Gio.Subprocess({
+                        argv: ['gnome-system-monitor']
+                    });
+                    proc.init(null);
+                    proc.wait_async(null, null);
+                }
+            } catch (e) {
+                console.error(`MemAlert Open Monitor Error: ${e.message}`);
+            }
         });
 
         Main.panel.addToStatusArea(this.uuid, this._indicator);
 
-        this._timeout = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 3000, () => {
-            this._updateMemoryUsage();
-            this._updateTopProcesses();
-            return GLib.SOURCE_CONTINUE;
-        });
-
         this._lastPercentage = null;
         this._lastTime = Date.now();
+        this._isUpdating = false;
+
+        this._updateLoop();
+
+        this._timeout = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 3000, () => {
+            this._updateLoop();
+            return GLib.SOURCE_CONTINUE;
+        });
     }
 
-    _getPSI() {
+    async _updateLoop() {
+        if (this._isUpdating) return;
+        this._isUpdating = true;
         try {
-            const [ok, contents] = GLib.file_get_contents('/proc/pressure/memory');
-            if (!ok) return null;
+            await this._updateMemoryUsage();
+            await this._updateTopProcesses();
+        } catch (e) {
+            console.error(`MemAlert Loop Error: ${e.message}`);
+        } finally {
+            this._isUpdating = false;
+        }
+    }
+
+    async _getPSI() {
+        try {
+            let file = Gio.File.new_for_path('/proc/pressure/memory');
+            // Correção EGO: I/O estritamente assíncrono
+            let [success, contents] = await new Promise((resolve, reject) => {
+                file.load_contents_async(null, (obj, res) => {
+                    try {
+                        resolve(obj.load_contents_finish(res));
+                    } catch (e) {
+                        reject(e);
+                    }
+                });
+            });
+
+            if (!success) return null;
             const text = new TextDecoder().decode(contents);
             const lines = text.split('\n');
             let someMatch = lines[0].match(/avg10=([\d.]+)/);
@@ -94,29 +144,25 @@ export default class MemoryAlertExtension extends Extension {
         }
     }
 
-    _updateMemoryUsage() {
+    async _updateMemoryUsage() {
         try {
-            const [ok, contents] = GLib.file_get_contents('/proc/meminfo');
-            if (!ok) return;
-            const contentString = new TextDecoder().decode(contents);
-            const lines = contentString.split('\n');
-            let memTotal = 0, memAvailable = 0;
-            lines.forEach(line => {
-                if (line.startsWith('MemTotal:')) memTotal = parseInt(line.replace(/[^0-9]/g, ''));
-                if (line.startsWith('MemAvailable:')) memAvailable = parseInt(line.replace(/[^0-9]/g, ''));
-            });
+            // Correção EGO: Leitura via chamadas nativas de kernel com GTop (sem blocking I/O)
+            let mem = new GTop.glibtop_mem();
+            GTop.glibtop_get_mem(mem);
 
-            if (memTotal > 0) {
-                let percentage = Math.floor(((memTotal - memAvailable) / memTotal) * 100);
+            if (mem.total > 0) {
+                let usedMem = mem.total - mem.free - mem.cached - mem.buffer;
+                let percentage = Math.floor((usedMem / mem.total) * 100);
+
                 let currentTime = Date.now();
                 let deltaMem = this._lastPercentage !== null ? percentage - this._lastPercentage : 0;
-                let deltaTime = (currentTime - this._lastTime) / 1000; // em segundos
+                let deltaTime = (currentTime - this._lastTime) / 1000;
 
                 let gradient = deltaTime > 0 ? deltaMem / deltaTime : 0;
                 this._lastPercentage = percentage;
                 this._lastTime = currentTime;
 
-                let psi = this._getPSI();
+                let psi = await this._getPSI();
                 if (psi) {
                     this._psiItem.label.set_text(`Pressão PSI: Some=${psi.some}% Full=${psi.full}%`);
                 }
@@ -124,79 +170,148 @@ export default class MemoryAlertExtension extends Extension {
                 let labelStyle = 'font-weight: bold;';
                 let indicatorStyle = 'border-radius: 4px; margin: 2px 4px; padding: 0 4px;';
 
-                if (gradient > 1.5) { // Vazamento detectado (>1.5% por segundo)
+                // Correção EGO: Leitura dinâmica das configurações do usuário (memory-limit)
+                let memoryLimit = this._settings.get_int('memory-limit');
+                if (memoryLimit <= 0 || memoryLimit > 100) memoryLimit = 85;
+
+                if (gradient > 1.5) { // Vazamento detectado
                     this._label.set_text(`LEAK: ${percentage}%`);
                     labelStyle += 'color: white;';
-                    indicatorStyle += 'background-color: #9b59b6;'; // Roxo Pulsante (conceito)
+                    indicatorStyle += 'background-color: #9b59b6;';
                 } else {
                     this._label.set_text(`RAM: ${percentage}%`);
-                    if (percentage >= 95 || (psi && psi.full > 10)) {
+                    if (percentage >= memoryLimit || (psi && psi.full > 10)) {
                         labelStyle += 'color: white;';
                         indicatorStyle += 'background-color: #e74c3c;'; // Vermelho Crítico
-                    } else if (percentage >= 85 || (psi && psi.some > 20)) {
+                    } else if (percentage >= (memoryLimit - 10) || (psi && psi.some > 20)) {
                         labelStyle += 'color: white;';
                         indicatorStyle += 'background-color: #e67e22;'; // Laranja
-                    } else if (percentage >= 70 || (psi && psi.some > 5)) {
+                    } else if (percentage >= (memoryLimit - 20) || (psi && psi.some > 5)) {
                         labelStyle += 'color: rgba(0,0,0,0.8);';
                         indicatorStyle += 'background-color: #f1c40f;'; // Amarelo
                     } else if (percentage >= 60) {
                         labelStyle += 'color: #2ecc71;';
-                        indicatorStyle = ''; // Sem fundo especial entre 60-70
+                        indicatorStyle = '';
                     } else {
                         labelStyle += 'color: #2ecc71;';
-                        indicatorStyle = ''; // Verde/Normal
+                        indicatorStyle = '';
                     }
                 }
 
                 this._label.set_style(labelStyle);
                 this._indicator.set_style(indicatorStyle);
-                let freeGB = (memAvailable / (1024 * 1024)).toFixed(2);
-                this._statsItem.label.set_text(`Disponível: ${freeGB} GB`);
+                let availableGB = ((mem.free + mem.cached + mem.buffer) / (1024 * 1024 * 1024)).toFixed(2);
+                this._statsItem.label.set_text(`Disponível: ${availableGB} GB`);
             }
-        } catch (e) { console.error(e); }
+        } catch (e) {
+            console.error(`MemAlert RAM Update Error: ${e.message}`);
+        }
     }
 
-    _updateTopProcesses() {
+    async _updateTopProcesses() {
         try {
-            let proc = new Gio.Subprocess({
-                argv: ['ps', '-eo', 'pid,comm,%mem,rss', '--sort=-rss', '--no-headers'],
-                flags: Gio.SubprocessFlags.STDOUT_PIPE,
+            let procDir = Gio.File.new_for_path('/proc');
+            // Correção EGO: Enúmeração de arquivos no /proc totalmente assíncrona
+            let enumerator = await new Promise((resolve, reject) => {
+                procDir.enumerate_children_async(
+                    'standard::name,standard::type',
+                    Gio.FileQueryInfoFlags.NONE,
+                    GLib.PRIORITY_DEFAULT,
+                    null,
+                    (obj, res) => {
+                        try {
+                            resolve(obj.enumerate_children_finish(res));
+                        } catch (e) {
+                            reject(e);
+                        }
+                    }
+                );
             });
-            proc.init(null);
 
-            proc.communicate_utf8_async(null, null, (p, res) => {
-                try {
-                    let [ok, stdout, stderr] = p.communicate_utf8_finish(res);
-
-                    if (ok && stdout) {
-                        let lines = stdout.trim().split('\n').slice(0, 3);
-
-                        this._villains.forEach((item, index) => {
-                            if (lines[index]) {
-                                let parts = lines[index].trim().split(/\s+/);
-                                if (parts.length >= 4) {
-                                    let pid = parts[0];
-                                    let comm = parts[1];
-                                    let memPct = parts[2];
-                                    let rssKiB = parseInt(parts[3]);
-                                    let rssMiB = (rssKiB / 1024).toFixed(0);
-
-                                    item._pid = pid;
-                                    item._label.text = `${comm} (${pid}): ${rssMiB}MB (${memPct}%)`;
-                                    item._killBtn.show();
-                                    item.show();
-                                }
-                            } else {
-                                item.hide();
+            let pids = [];
+            let infos;
+            while (true) {
+                infos = await new Promise((resolve, reject) => {
+                    enumerator.next_files_async(
+                        100,
+                        GLib.PRIORITY_DEFAULT,
+                        null,
+                        (obj, res) => {
+                            try {
+                                resolve(obj.next_files_finish(res));
+                            } catch (e) {
+                                reject(e);
                             }
-                        });
+                        }
+                    );
+                });
+                if (!infos || infos.length === 0) break;
+
+                for (let info of infos) {
+                    let name = info.get_name();
+                    if (/^\d+$/.test(name)) {
+                        pids.push(parseInt(name));
+                    }
+                }
+            }
+
+            await new Promise((resolve, reject) => {
+                enumerator.close_async(GLib.PRIORITY_DEFAULT, null, (obj, res) => {
+                    try {
+                        resolve(obj.close_finish(res));
+                    } catch (e) {
+                        reject(e);
+                    }
+                });
+            });
+
+            let processList = [];
+            for (let pid of pids) {
+                try {
+                    // Correção EGO: Acessando métricas do kernel diretamente via GTop sem criar processos
+                    let procMem = new GTop.glibtop_proc_mem();
+                    GTop.glibtop_get_proc_mem(procMem, pid);
+
+                    let procState = new GTop.glibtop_proc_state();
+                    GTop.glibtop_get_proc_state(procState, pid);
+
+                    if (procState.cmd && procMem.resident > 0) {
+                        let cmdString = '';
+                        for (let i = 0; i < procState.cmd.length; i++) {
+                            if (procState.cmd[i] === 0) break;
+                            cmdString += String.fromCharCode(procState.cmd[i]);
+                        }
+
+                        if (cmdString) {
+                            processList.push({
+                                pid: pid,
+                                cmd: cmdString,
+                                rss: procMem.resident
+                            });
+                        }
                     }
                 } catch (e) {
-                    console.error(`MemAlert Async Error: ${e.message}`);
+                    // PIDs inativos/protegidos pulam silenciosamente
+                }
+            }
+
+            processList.sort((a, b) => b.rss - a.rss);
+            let top3 = processList.slice(0, 3);
+
+            this._villains.forEach((item, index) => {
+                if (top3[index]) {
+                    let p = top3[index];
+                    let rssMiB = (p.rss / (1024 * 1024)).toFixed(0);
+                    item._pid = p.pid;
+                    item._label.text = `${p.cmd} (${p.pid}): ${rssMiB}MB`;
+                    item._killBtn.show();
+                    item.show();
+                } else {
+                    item.hide();
                 }
             });
         } catch (e) {
-            console.error(`MemAlert Gio Error: ${e.message}`);
+            console.error(`MemAlert Processes Update Error: ${e.message}`);
         }
     }
 
