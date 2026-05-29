@@ -1,0 +1,64 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: mem-alert 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-29 18:50-0400\n"
+"PO-Revision-Date: 2026-05-29 18:51-0400\n"
+"Last-Translator: Richardson Souza <richardson.souza@gmail.com>\n"
+"Language-Team: English <en@li.org>\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: extension.js:35
+msgid "Calculando..."
+msgstr "Calculating..."
+
+#: extension.js:38
+msgid "Pressão PSI: --"
+msgstr "PSI Pressure: --"
+
+#: extension.js:44
+msgid "Top Processos (RAM):"
+msgstr "Top Processes (RAM):"
+
+#: extension.js:53
+msgid "Kill"
+msgstr "Kill"
+
+#: extension.js:85
+msgid "Abrir Monitor do Sistema"
+msgstr "Open System Monitor"
+
+#: extension.js:189
+msgid "Pressão PSI: Some="
+msgstr "PSI Pressure: Some="
+
+#: extension.js:189
+msgid "Full="
+msgstr "Full="
+
+#: extension.js:199
+msgid "LEAK: "
+msgstr "LEAK: "
+
+#: extension.js:203
+msgid "RAM: "
+msgstr "RAM: "
+
+#: extension.js:225
+msgid "Disponível: "
+msgstr "Available: "
+
+#: prefs.js:12
+msgid "Configurações de Monitoramento"
+msgstr "Monitoring Settings"
+
+#: prefs.js:25
+msgid "Limite de Alerta (%)"
+msgstr "Alert Limit (%)"
+
+#: prefs.js:26
+msgid "O texto ficará vermelho ao atingir este valor"
+msgstr "The text will turn red when this value is reached"

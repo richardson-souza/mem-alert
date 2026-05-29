@@ -1,7 +1,7 @@
 import Adw from 'gi://Adw';
 import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk';
-import { ExtensionPreferences } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
+import { ExtensionPreferences, gettext as _ } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
 export default class MemoryAlertPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
@@ -9,7 +9,7 @@ export default class MemoryAlertPreferences extends ExtensionPreferences {
 
         const page = new Adw.PreferencesPage();
         const group = new Adw.PreferencesGroup({
-            title: 'Configurações de Monitoramento'
+            title: _('Configurações de Monitoramento')
         });
         page.add(group);
 
@@ -22,8 +22,8 @@ export default class MemoryAlertPreferences extends ExtensionPreferences {
         });
 
         const memoryRow = new Adw.SpinRow({
-            title: 'Limite de Alerta (%)',
-            subtitle: 'O texto ficará vermelho ao atingir este valor',
+            title: _('Limite de Alerta (%)'),
+            subtitle: _('O texto ficará vermelho ao atingir este valor'),
             adjustment: new Gtk.Adjustment({
                 lower: 1,
                 upper: 100,

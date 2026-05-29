@@ -6,7 +6,7 @@ import GTop from 'gi://GTop';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
-import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
+import { Extension, gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
 import { parsePSI, calculateMemoryPercentage, decodeCmd } from './utils.js';
 
 /**
@@ -32,16 +32,16 @@ export default class MemoryAlertExtension extends Extension {
         });
         this._indicator.add_child(this._label);
 
-        this._statsItem = new PopupMenu.PopupMenuItem('Calculando...', { reactive: false });
+        this._statsItem = new PopupMenu.PopupMenuItem(_('Calculando...'), { reactive: false });
         this._indicator.menu.addMenuItem(this._statsItem);
 
-        this._psiItem = new PopupMenu.PopupMenuItem('Pressão PSI: --', { reactive: false });
+        this._psiItem = new PopupMenu.PopupMenuItem(_('Pressão PSI: --'), { reactive: false });
         this._psiItem.label.set_style('font-size: 0.85em; opacity: 0.8;');
         this._indicator.menu.addMenuItem(this._psiItem);
 
         this._indicator.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
-        let titleItem = new PopupMenu.PopupMenuItem('Top Processos (RAM):', { reactive: false });
+        let titleItem = new PopupMenu.PopupMenuItem(_('Top Processos (RAM):'), { reactive: false });
         titleItem.label.set_style('font-weight: bold; font-size: 0.9em; opacity: 0.7;');
         this._indicator.menu.addMenuItem(titleItem);
 
@@ -50,7 +50,7 @@ export default class MemoryAlertExtension extends Extension {
             let item = new PopupMenu.PopupBaseMenuItem({ reactive: true });
             let label = new St.Label({ text: '', x_expand: true, y_align: Clutter.ActorAlign.CENTER });
             let killBtn = new St.Button({
-                label: 'Kill',
+                label: _('Kill'),
                 style_class: 'button',
                 x_align: Clutter.ActorAlign.END,
                 y_align: Clutter.ActorAlign.CENTER,
@@ -82,7 +82,7 @@ export default class MemoryAlertExtension extends Extension {
         }
 
         this._indicator.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-        this._indicator.menu.addAction('Abrir Monitor do Sistema', () => {
+        this._indicator.menu.addAction(_('Abrir Monitor do Sistema'), () => {
             try {
                 let appInfo = Gio.DesktopAppInfo.new('gnome-system-monitor.desktop');
                 if (appInfo) {
@@ -186,7 +186,7 @@ export default class MemoryAlertExtension extends Extension {
 
                 let psi = await this._getPSI();
                 if (psi) {
-                    this._psiItem.label.set_text(`Pressão PSI: Some=${psi.some}% Full=${psi.full}%`);
+                    this._psiItem.label.set_text(_('Pressão PSI: Some=') + psi.some + '% ' + _('Full=') + psi.full + '%');
                 }
 
                 let labelStyle = 'font-weight: bold;';
@@ -196,11 +196,11 @@ export default class MemoryAlertExtension extends Extension {
                 if (memoryLimit <= 0 || memoryLimit > 100) memoryLimit = 85;
 
                 if (gradient > 1.5) {
-                    this._label.set_text(`LEAK: ${percentage}%`);
+                    this._label.set_text(_('LEAK: ') + percentage + '%');
                     labelStyle += 'color: white;';
                     indicatorStyle += 'background-color: #9b59b6;';
                 } else {
-                    this._label.set_text(`RAM: ${percentage}%`);
+                    this._label.set_text(_('RAM: ') + percentage + '%');
                     if (percentage >= memoryLimit || (psi && psi.full > 10)) {
                         labelStyle += 'color: white;';
                         indicatorStyle += 'background-color: #e74c3c;';
@@ -222,7 +222,7 @@ export default class MemoryAlertExtension extends Extension {
                 this._label.set_style(labelStyle);
                 this._indicator.set_style(indicatorStyle);
                 let availableGB = ((mem.free + mem.cached + mem.buffer) / (1024 * 1024 * 1024)).toFixed(2);
-                this._statsItem.label.set_text(`Disponível: ${availableGB} GB`);
+                this._statsItem.label.set_text(_('Disponível: ') + availableGB + ' GB');
             }
         } catch (e) {
             console.error(`MemAlert RAM Update Error: ${e.message}`);
