@@ -1,9 +1,9 @@
 /**
- * Realiza o parsing de dados de PSI (Pressure Stall Information) de memória.
- * Extrai os valores 'avg10' para as métricas 'some' e 'full'.
+ * Parses Linux PSI (Pressure Stall Information) memory metrics.
+ * Extracts 'avg10' values for 'some' and 'full' pressure states.
  *
- * @param {string|Uint8Array} contents - Conteúdo do arquivo /proc/pressure/memory.
- * @returns {{some: number, full: number}|null} Objeto contendo os valores de PSI ou null em caso de erro de parsing.
+ * @param {string|Uint8Array} contents - The contents of /proc/pressure/memory.
+ * @returns {{some: number, full: number}|null} Object containing PSI metrics, or null if parsing fails.
  */
 export function parsePSI(contents) {
     if (!contents) return null;
@@ -24,14 +24,14 @@ export function parsePSI(contents) {
 }
 
 /**
- * Calcula dinamicamente o percentual de RAM em uso de forma determinística,
- * descontando a memória alocada para caches e buffers.
+ * Deterministically calculates the active physical memory (RAM) usage percentage,
+ * excluding system caches and buffers to get an accurate representation.
  *
- * @param {number} total - Memória física total em bytes (GTop).
- * @param {number} free - Memória livre em bytes (GTop).
- * @param {number} cached - Memória em cache em bytes (GTop).
- * @param {number} buffer - Memória em buffers em bytes (GTop).
- * @returns {number} Percentual inteiro de memória em uso [0-100].
+ * @param {number} total - Total physical memory in bytes (from GTop).
+ * @param {number} free - Raw free memory in bytes (from GTop).
+ * @param {number} cached - Cached memory in bytes (from GTop).
+ * @param {number} buffer - Buffered memory in bytes (from GTop).
+ * @returns {number} Integer representing the memory usage percentage [0-100].
  */
 export function calculateMemoryPercentage(total, free, cached, buffer) {
     if (total <= 0) return 0;
@@ -40,11 +40,11 @@ export function calculateMemoryPercentage(total, free, cached, buffer) {
 }
 
 /**
- * Decodifica um array de bytes C terminados em caractere nulo (\0)
- * para uma string JS legível. Utilizado com retornos do GTop.
+ * Decodes a null-terminated C char array (\0) into a clean, readable JavaScript string.
+ * Typically used to parse command strings returned by GTop.
  *
- * @param {number[]} cmdBytes - Array com o código de caracteres em formato ASCII.
- * @returns {string} String do comando decodificado.
+ * @param {number[]} cmdBytes - Array of character codes in ASCII/UTF-8 format.
+ * @returns {string} The decoded command string.
  */
 export function decodeCmd(cmdBytes) {
     if (!cmdBytes) return '';

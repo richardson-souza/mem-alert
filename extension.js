@@ -10,16 +10,16 @@ import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 import { parsePSI, calculateMemoryPercentage, decodeCmd } from './utils.js';
 
 /**
- * Extensão MemoryAlertExtension para o GNOME Shell.
- * Fornece monitoramento de uso de memória RAM em tempo real na barra superior,
- * exibindo alertas visuais personalizáveis, pressão de memória (PSI) e
- * atalhos rápidos para monitoramento e controle de processos de alto consumo.
+ * MemoryAlertExtension for GNOME Shell.
+ * Provides real-time RAM usage monitoring on the top panel bar,
+ * customizable visual alerts, memory pressure information (PSI),
+ * and shortcuts to view/terminate high-memory processes.
  */
 export default class MemoryAlertExtension extends Extension {
     /**
-     * Inicializa os recursos da extensão ao ser habilitada.
-     * Configura a interface gráfica na barra do painel, menus suspensos,
-     * ligações de sinais (eventos) e inicia o loop de monitoramento.
+     * Initializes extension resources when enabled.
+     * Sets up the panel button UI, drop-down menus, event connections,
+     * and initializes the recurring monitoring cycle.
      */
     enable() {
         this._settings = this.getSettings('org.gnome.shell.extensions.mem-alert');
@@ -114,9 +114,9 @@ export default class MemoryAlertExtension extends Extension {
     }
 
     /**
-     * Orquestrador assíncrono acionado ciclicamente a cada 3 segundos.
-     * Garante o sequenciamento correto das atualizações de RAM e listagem
-     * de processos, prevenindo concorrência na thread de renderização da UI.
+     * Async orchestrator invoked every 3 seconds.
+     * Ensures strict sequential execution of RAM and top process updates,
+     * preventing UI thread rendering concurrency issues.
      *
      * @async
      */
@@ -134,11 +134,11 @@ export default class MemoryAlertExtension extends Extension {
     }
 
     /**
-     * Recupera de maneira assíncrona e não-bloqueante as métricas de pressão
-     * de memória (PSI) diretamente do arquivo de kernel '/proc/pressure/memory'.
+     * Asynchronously and non-blockingly retrieves memory Pressure Stall Information (PSI)
+     * directly from the kernel file '/proc/pressure/memory'.
      *
      * @async
-     * @returns {Promise<{some: number, full: number}|null>} Objeto contendo os valores avg10 ou null se falhar.
+     * @returns {Promise<{some: number, full: number}|null>} Object containing avg10 pressure stats, or null if it fails.
      */
     async _getPSI() {
         try {
@@ -161,10 +161,10 @@ export default class MemoryAlertExtension extends Extension {
     }
 
     /**
-     * Atualiza as informações de uso geral de RAM na barra superior e menu suspenso.
-     * Utiliza a biblioteca nativa GTop em tempo de CPU irrisório.
-     * Lê dinamicamente as preferências do usuário para estilização de cores
-     * e detecta vazamentos repentinos (gradiente abrupto de consumo).
+     * Updates RAM general stats on the top bar and dropdown menu.
+     * Leverages native C GTop bindings for negligible CPU overhead.
+     * Dynamically reads user settings for visual threshold coloring
+     * and detects sudden consumption increases (rapid memory leak detection).
      *
      * @async
      */
@@ -230,9 +230,9 @@ export default class MemoryAlertExtension extends Extension {
     }
 
     /**
-     * Varre e lista os top 3 processos com maior consumo de RAM física (RSS) no sistema.
-     * Enunera a árvore '/proc' de maneira assíncrona e lê informações do kernel por
-     * chamadas internas nativas via GTop, prevenindo forks e reduzindo consumo de bateria.
+     * Lists the top 3 active processes with highest physical memory (RSS) usage.
+     * Enumerates '/proc' asynchronously and queries process metrics using GTop bindings,
+     * avoiding system forks to significantly save battery and CPU cycles.
      *
      * @async
      */
@@ -338,8 +338,8 @@ export default class MemoryAlertExtension extends Extension {
     }
 
     /**
-     * Limpa, remove temporizadores e destroi instâncias gráficas da extensão
-     * no painel ao ser desabilitada pelo GNOME Shell, prevenindo vazamentos de memória.
+     * Cleans up all system timers, destroys active UI indicators,
+     * and clears settings objects when the extension is disabled by GNOME Shell.
      */
     disable() {
         if (this._timeout) GLib.Source.remove(this._timeout);
