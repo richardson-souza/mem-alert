@@ -1,0 +1,9 @@
+{
+  "name": "Memory Alert Monitor",
+  "description": "Memory monitor with customizable visual alerts.",
+  "uuid": "mem-alert@richardson-souza.github.com",
+  "shell-version": [
+    "48"
+  ],
+  "url": ""
+}

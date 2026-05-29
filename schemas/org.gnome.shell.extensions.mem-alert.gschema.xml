@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.mem-alert" path="/org/gnome/shell/extensions/mem-alert/">
+    <key name="memory-limit" type="i">
+      <default>85</default>
+      <summary>Limite de Memória</summary>
+      <description>Percentual para ativar o alerta visual</description>
+    </key>
+  </schema>
+</schemalist>
