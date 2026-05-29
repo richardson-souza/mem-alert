@@ -342,8 +342,46 @@ export default class MemoryAlertExtension extends Extension {
      * and clears settings objects when the extension is disabled by GNOME Shell.
      */
     disable() {
-        if (this._timeout) GLib.Source.remove(this._timeout);
-        this._indicator.destroy();
+        if (this._timeout) {
+            GLib.Source.remove(this._timeout);
+            this._timeout = null;
+        }
+
+        if (this._label) {
+            this._label.destroy();
+            this._label = null;
+        }
+
+        if (this._statsItem) {
+            this._statsItem.destroy();
+            this._statsItem = null;
+        }
+
+        if (this._psiItem) {
+            this._psiItem.destroy();
+            this._psiItem = null;
+        }
+
+        if (this._villains) {
+            this._villains.forEach(item => {
+                if (item._killBtn) {
+                    item._killBtn.destroy();
+                    item._killBtn = null;
+                }
+                if (item._label) {
+                    item._label.destroy();
+                    item._label = null;
+                }
+                item.destroy();
+            });
+            this._villains = null;
+        }
+
+        if (this._indicator) {
+            this._indicator.destroy();
+            this._indicator = null;
+        }
+
         this._settings = null;
     }
 }
