@@ -9,7 +9,18 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 import { parsePSI, calculateMemoryPercentage, decodeCmd } from './utils.js';
 
+/**
+ * Extensão MemoryAlertExtension para o GNOME Shell.
+ * Fornece monitoramento de uso de memória RAM em tempo real na barra superior,
+ * exibindo alertas visuais personalizáveis, pressão de memória (PSI) e
+ * atalhos rápidos para monitoramento e controle de processos de alto consumo.
+ */
 export default class MemoryAlertExtension extends Extension {
+    /**
+     * Inicializa os recursos da extensão ao ser habilitada.
+     * Configura a interface gráfica na barra do painel, menus suspensos,
+     * ligações de sinais (eventos) e inicia o loop de monitoramento.
+     */
     enable() {
         this._settings = this.getSettings('org.gnome.shell.extensions.mem-alert');
         this._indicator = new PanelMenu.Button(0.5, this.metadata.name, false);
@@ -55,7 +66,6 @@ export default class MemoryAlertExtension extends Extension {
             killBtn.connect('clicked', () => {
                 if (item._pid) {
                     try {
-                        // Correção de segurança EGO: argv array para evitar injeção de comandos
                         let proc = new Gio.Subprocess({
                             argv: ['kill', '-15', item._pid.toString()]
                         });
@@ -74,7 +84,6 @@ export default class MemoryAlertExtension extends Extension {
         this._indicator.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         this._indicator.menu.addAction('Abrir Monitor do Sistema', () => {
             try {
-                // Correção EGO: DesktopAppInfo para conformidade com Wayland e EGO guidelines
                 let appInfo = Gio.DesktopAppInfo.new('gnome-system-monitor.desktop');
                 if (appInfo) {
                     appInfo.launch(null, null);
@@ -104,6 +113,13 @@ export default class MemoryAlertExtension extends Extension {
         });
     }
 
+    /**
+     * Orquestrador assíncrono acionado ciclicamente a cada 3 segundos.
+     * Garante o sequenciamento correto das atualizações de RAM e listagem
+     * de processos, prevenindo concorrência na thread de renderização da UI.
+     *
+     * @async
+     */
     async _updateLoop() {
         if (this._isUpdating) return;
         this._isUpdating = true;
@@ -117,10 +133,16 @@ export default class MemoryAlertExtension extends Extension {
         }
     }
 
+    /**
+     * Recupera de maneira assíncrona e não-bloqueante as métricas de pressão
+     * de memória (PSI) diretamente do arquivo de kernel '/proc/pressure/memory'.
+     *
+     * @async
+     * @returns {Promise<{some: number, full: number}|null>} Objeto contendo os valores avg10 ou null se falhar.
+     */
     async _getPSI() {
         try {
             let file = Gio.File.new_for_path('/proc/pressure/memory');
-            // Correção EGO: I/O estritamente assíncrono
             let [success, contents] = await new Promise((resolve, reject) => {
                 file.load_contents_async(null, (obj, res) => {
                     try {
@@ -138,9 +160,16 @@ export default class MemoryAlertExtension extends Extension {
         }
     }
 
+    /**
+     * Atualiza as informações de uso geral de RAM na barra superior e menu suspenso.
+     * Utiliza a biblioteca nativa GTop em tempo de CPU irrisório.
+     * Lê dinamicamente as preferências do usuário para estilização de cores
+     * e detecta vazamentos repentinos (gradiente abrupto de consumo).
+     *
+     * @async
+     */
     async _updateMemoryUsage() {
         try {
-            // Correção EGO: Leitura via chamadas nativas de kernel com GTop (sem blocking I/O)
             let mem = new GTop.glibtop_mem();
             GTop.glibtop_get_mem(mem);
 
@@ -163,11 +192,10 @@ export default class MemoryAlertExtension extends Extension {
                 let labelStyle = 'font-weight: bold;';
                 let indicatorStyle = 'border-radius: 4px; margin: 2px 4px; padding: 0 4px;';
 
-                // Correção EGO: Leitura dinâmica das configurações do usuário (memory-limit)
                 let memoryLimit = this._settings.get_int('memory-limit');
                 if (memoryLimit <= 0 || memoryLimit > 100) memoryLimit = 85;
 
-                if (gradient > 1.5) { // Vazamento detectado
+                if (gradient > 1.5) {
                     this._label.set_text(`LEAK: ${percentage}%`);
                     labelStyle += 'color: white;';
                     indicatorStyle += 'background-color: #9b59b6;';
@@ -175,13 +203,13 @@ export default class MemoryAlertExtension extends Extension {
                     this._label.set_text(`RAM: ${percentage}%`);
                     if (percentage >= memoryLimit || (psi && psi.full > 10)) {
                         labelStyle += 'color: white;';
-                        indicatorStyle += 'background-color: #e74c3c;'; // Vermelho Crítico
+                        indicatorStyle += 'background-color: #e74c3c;';
                     } else if (percentage >= (memoryLimit - 10) || (psi && psi.some > 20)) {
                         labelStyle += 'color: white;';
-                        indicatorStyle += 'background-color: #e67e22;'; // Laranja
+                        indicatorStyle += 'background-color: #e67e22;';
                     } else if (percentage >= (memoryLimit - 20) || (psi && psi.some > 5)) {
                         labelStyle += 'color: rgba(0,0,0,0.8);';
-                        indicatorStyle += 'background-color: #f1c40f;'; // Amarelo
+                        indicatorStyle += 'background-color: #f1c40f;';
                     } else if (percentage >= 60) {
                         labelStyle += 'color: #2ecc71;';
                         indicatorStyle = '';
@@ -201,10 +229,16 @@ export default class MemoryAlertExtension extends Extension {
         }
     }
 
+    /**
+     * Varre e lista os top 3 processos com maior consumo de RAM física (RSS) no sistema.
+     * Enunera a árvore '/proc' de maneira assíncrona e lê informações do kernel por
+     * chamadas internas nativas via GTop, prevenindo forks e reduzindo consumo de bateria.
+     *
+     * @async
+     */
     async _updateTopProcesses() {
         try {
             let procDir = Gio.File.new_for_path('/proc');
-            // Correção EGO: Enúmeração de arquivos no /proc totalmente assíncrona
             let enumerator = await new Promise((resolve, reject) => {
                 procDir.enumerate_children_async(
                     'standard::name,standard::type',
@@ -261,7 +295,6 @@ export default class MemoryAlertExtension extends Extension {
             let processList = [];
             for (let pid of pids) {
                 try {
-                    // Correção EGO: Acessando métricas do kernel diretamente via GTop sem criar processos
                     let procMem = new GTop.glibtop_proc_mem();
                     GTop.glibtop_get_proc_mem(procMem, pid);
 
@@ -304,6 +337,10 @@ export default class MemoryAlertExtension extends Extension {
         }
     }
 
+    /**
+     * Limpa, remove temporizadores e destroi instâncias gráficas da extensão
+     * no painel ao ser desabilitada pelo GNOME Shell, prevenindo vazamentos de memória.
+     */
     disable() {
         if (this._timeout) GLib.Source.remove(this._timeout);
         this._indicator.destroy();
