@@ -7,6 +7,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
+import { parsePSI, calculateMemoryPercentage, decodeCmd } from './utils.js';
 
 export default class MemoryAlertExtension extends Extension {
     enable() {
@@ -131,14 +132,7 @@ export default class MemoryAlertExtension extends Extension {
             });
 
             if (!success) return null;
-            const text = new TextDecoder().decode(contents);
-            const lines = text.split('\n');
-            let someMatch = lines[0].match(/avg10=([\d.]+)/);
-            let fullMatch = lines[1].match(/avg10=([\d.]+)/);
-            return {
-                some: someMatch ? parseFloat(someMatch[1]) : 0,
-                full: fullMatch ? parseFloat(fullMatch[1]) : 0
-            };
+            return parsePSI(contents);
         } catch (e) {
             return null;
         }
@@ -151,8 +145,7 @@ export default class MemoryAlertExtension extends Extension {
             GTop.glibtop_get_mem(mem);
 
             if (mem.total > 0) {
-                let usedMem = mem.total - mem.free - mem.cached - mem.buffer;
-                let percentage = Math.floor((usedMem / mem.total) * 100);
+                let percentage = calculateMemoryPercentage(mem.total, mem.free, mem.cached, mem.buffer);
 
                 let currentTime = Date.now();
                 let deltaMem = this._lastPercentage !== null ? percentage - this._lastPercentage : 0;
@@ -276,11 +269,7 @@ export default class MemoryAlertExtension extends Extension {
                     GTop.glibtop_get_proc_state(procState, pid);
 
                     if (procState.cmd && procMem.resident > 0) {
-                        let cmdString = '';
-                        for (let i = 0; i < procState.cmd.length; i++) {
-                            if (procState.cmd[i] === 0) break;
-                            cmdString += String.fromCharCode(procState.cmd[i]);
-                        }
+                        let cmdString = decodeCmd(procState.cmd);
 
                         if (cmdString) {
                             processList.push({
