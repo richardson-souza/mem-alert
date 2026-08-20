@@ -27,6 +27,31 @@ Um monitor de memória de alto desempenho, assíncrono e amigável à bateria pa
 
 ---
 
+### ⬇️ Instalação a partir do Código Fonte (Clone)
+
+```bash
+# 1. Clone o repositório
+git clone https://github.com/richardson-souza/mem-alert.git
+cd mem-alert
+
+# 2. Compile o arquivo de tradução
+msgfmt po/en.po -o locale/en/LC_MESSAGES/mem-alert.mo
+
+# 3. Crie o pacote da extensão
+zip -r mem-alert@richardson-souza.github.com.shell-extension.zip \
+  extension.js metadata.json prefs.js utils.js locale/ \
+  schemas/org.gnome.shell.extensions.mem-alert.gschema.xml
+
+# 4. Instale usando o utilitário oficial do GNOME
+gnome-extensions install mem-alert@richardson-souza.github.com.shell-extension.zip --force
+
+# 5. Ative a extensão
+gnome-extensions enable mem-alert@richardson-souza.github.com
+```
+*(Pode ser necessário encerrar a sessão/logout para que o GNOME reconheça a extensão recém-instalada)*
+
+---
+
 ### 📂 Estrutura do Projeto
 
 * **`extension.js`**: Gerencia a criação dos elementos gráficos na barra de status do GNOME, menus suspensos, atalhos rápidos e a orquestração cíclica de atualização.
@@ -100,6 +125,31 @@ shexli mem-alert@richardson-souza.github.com.shell-extension.zip
 * **Visual Alarms & Leak Detection:** Features smart coloring based on customizable thresholds. Triggers alert states if RAM rises abruptly over time (leak detection).
 * **Top Process Monitor & Safe Killer:** Shows the top 3 RAM-consuming processes, complete with a safe kill button (`SIGTERM`) designed with secure command arguments.
 * **Gettext i18n Internationalization:** Ready-to-translate setup utilizing Gettext standards. Adapts UI elements dynamically between English and Portuguese.
+
+---
+
+### ⬇️ Installation from Source (Clone)
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/richardson-souza/mem-alert.git
+cd mem-alert
+
+# 2. Compile translation files
+msgfmt po/en.po -o locale/en/LC_MESSAGES/mem-alert.mo
+
+# 3. Package the extension
+zip -r mem-alert@richardson-souza.github.com.shell-extension.zip \
+  extension.js metadata.json prefs.js utils.js locale/ \
+  schemas/org.gnome.shell.extensions.mem-alert.gschema.xml
+
+# 4. Install using the GNOME extensions utility
+gnome-extensions install mem-alert@richardson-souza.github.com.shell-extension.zip --force
+
+# 5. Enable the extension
+gnome-extensions enable mem-alert@richardson-souza.github.com
+```
+*(You may need to log out and log back in for GNOME Shell to recognize the newly installed extension)*
 
 ---
 
