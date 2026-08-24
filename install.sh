@@ -14,8 +14,8 @@ if command -v gnome-shell >/dev/null 2>&1; then
     GNOME_VERSION_STR=$(gnome-shell --version)
     GNOME_VERSION=$(echo "$GNOME_VERSION_STR" | awk '{print $3}' | cut -d. -f1)
     
-    if [ -z "$GNOME_VERSION" ] || [ "$GNOME_VERSION" -lt 48 ]; then
-        echo "❌ Error: GNOME Shell version 48 or higher is required. Found: $GNOME_VERSION_STR"
+    if [ -z "$GNOME_VERSION" ] || [ "$GNOME_VERSION" -lt 46 ]; then
+        echo "❌ Error: GNOME Shell version 46 or higher is required. Found: $GNOME_VERSION_STR"
         exit 1
     else
         echo "✅ Found $GNOME_VERSION_STR (Supported)"

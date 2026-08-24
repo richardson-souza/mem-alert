@@ -1,10 +1,10 @@
 # Memory Alert Monitor 🧠🔋
 
-[![GNOME Shell](https://img.shields.io/badge/GNOME%20Shell-%E2%89%A5%2048-blue.svg)](https://extensions.gnome.org)
+[![GNOME Shell](https://img.shields.io/badge/GNOME%20Shell-%E2%89%A5%2046-blue.svg)](https://extensions.gnome.org)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Linter: Shexli Clean](https://img.shields.io/badge/shexli-clean-brightgreen.svg)](#-verificação-e-qualidade-linter)
 
-Um monitor de memória de alto desempenho, assíncrono e amigável à bateria para o GNOME Shell (48+). Fornece alertas visuais instantâneos, diagnósticos de pressão de memória (PSI), detecção inteligente de vazamentos e gerenciamento ágil de processos diretamente da sua barra superior.
+Um monitor de memória de alto desempenho, assíncrono e amigável à bateria para o GNOME Shell (46+). Fornece alertas visuais instantâneos, diagnósticos de pressão de memória (PSI), detecção inteligente de vazamentos e gerenciamento ágil de processos diretamente da sua barra superior.
 
 ---
 

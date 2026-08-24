@@ -3,6 +3,8 @@
   "description": "Memory monitor with customizable visual alerts.",
   "uuid": "mem-alert@richardson-souza.github.com",
   "shell-version": [
+    "46",
+    "47",
     "48"
   ],
   "url": "https://github.com/richardson-souza/mem-alert",
