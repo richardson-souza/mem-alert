@@ -27,6 +27,17 @@ Um monitor de memória de alto desempenho, assíncrono e amigável à bateria pa
 
 ---
 
+### ⬇️ Instalação Rápida (Recomendado)
+
+A forma mais fácil de instalar a extensão com todas as suas dependências (pacotes e bibliotecas) resolvidas automaticamente é através do script de instalação no terminal:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/richardson-souza/mem-alert/main/install.sh | bash
+```
+*(O script solicitará a senha de `sudo` apenas caso precise instalar pacotes faltantes como o `gettext` ou o `libgtop`)*
+
+---
+
 ### ⬇️ Instalação a partir do Código Fonte (Clone)
 
 ```bash
@@ -125,6 +136,17 @@ shexli mem-alert@richardson-souza.github.com.shell-extension.zip
 * **Visual Alarms & Leak Detection:** Features smart coloring based on customizable thresholds. Triggers alert states if RAM rises abruptly over time (leak detection).
 * **Top Process Monitor & Safe Killer:** Shows the top 3 RAM-consuming processes, complete with a safe kill button (`SIGTERM`) designed with secure command arguments.
 * **Gettext i18n Internationalization:** Ready-to-translate setup utilizing Gettext standards. Adapts UI elements dynamically between English and Portuguese.
+
+---
+
+### ⬇️ Quick Install (Recommended)
+
+The easiest way to install the extension with all missing dependencies (like system packages and C-bindings) resolved automatically is by using the terminal install script:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/richardson-souza/mem-alert/main/install.sh | bash
+```
+*(The script will only ask for your `sudo` password if it needs to install missing packages like `gettext` or `libgtop` via your package manager)*
 
 ---
 
