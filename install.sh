@@ -103,7 +103,10 @@ echo "⚙️ Installing the extension via gnome-extensions..."
 gnome-extensions install "$ZIP_NAME" --force
 
 echo "🚀 Enabling the extension..."
-gnome-extensions enable "$UUID"
+if ! gnome-extensions enable "$UUID" 2>/dev/null; then
+    echo "⚠️ Could not enable the extension automatically."
+    echo "   (This is normal! GNOME Shell often requires a restart to recognize new extensions.)"
+fi
 
 if [ "$CLONED" = true ]; then
     echo "🧹 Cleaning up temporary files..."
